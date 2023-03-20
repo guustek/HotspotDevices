@@ -5,14 +5,13 @@ import java.net.InetAddress
 import java.net.NetworkInterface
 import android.net.wifi.WifiManager
 import android.util.Log
-import com.example.hotspotdevices.NetworkManager.InterfacePrefix.WIFI_HOTSPOT
 import kotlinx.coroutines.*
 
 class NetworkManager(private val wifiManager: WifiManager) {
 
-    object InterfacePrefix {
+    object InterfaceType {
         val WIFI = setOf("wlan")
-        val WIFI_HOTSPOT = setOf("wlan", "ap", "swlan")
+        val WIRELESS = setOf("wlan", "ap", "swlan")
     }
 
     companion object {
@@ -25,9 +24,14 @@ class NetworkManager(private val wifiManager: WifiManager) {
         return method.invoke(wifiManager) as Boolean
     }
 
-    fun getWirelessInterfaces(): Collection<NetworkInterface> =
+    fun getInterfaces(prefixes: Set<String>): Collection<NetworkInterface> =
         NetworkInterface.getNetworkInterfaces().asSequence()
-            .filter { net -> WIFI_HOTSPOT.any { net.name.startsWith(it) } }
+            .filter { net: NetworkInterface ->
+                if (prefixes.isEmpty()) {
+                    return@filter true
+                }
+                prefixes.any { net.name.startsWith(it) }
+            }
             .toList()
 
     suspend fun scanNetworks(networkInterface: Collection<NetworkInterface>): List<ScanResult> =
@@ -58,9 +62,8 @@ class NetworkManager(private val wifiManager: WifiManager) {
         }
 
     fun getInterfaceAddress(networkInterface: NetworkInterface): String {
-        return networkInterface.interfaceAddresses.asSequence()
+        return networkInterface.interfaceAddresses
             .filter { it.broadcast != null }
-            .mapNotNull { it.address.hostAddress }
-            .first()
+            .firstNotNullOf { it.address.hostAddress }
     }
 }

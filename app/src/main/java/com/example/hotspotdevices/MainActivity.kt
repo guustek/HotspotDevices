@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val SCAN_RESULTS_BUNDLE_KEY = "DEVICE_LIST"
+        private  val INTERFACE_PREFIXES = NetworkManager.InterfaceType.WIRELESS
     }
 
     private val networkManager: NetworkManager by lazy {
@@ -48,7 +49,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         preferences.edit {
-            networkManager.getWirelessInterfaces().forEach {
+            networkManager.getInterfaces(INTERFACE_PREFIXES).forEach {
                 if (!preferences.contains(it.name)) {
                     putBoolean(it.name, true)
                 }
@@ -62,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.button.setOnClickListener {
-            val wirelessInterfaces = networkManager.getWirelessInterfaces()
+            val wirelessInterfaces = networkManager.getInterfaces(INTERFACE_PREFIXES)
                 .filter { preferences.getBoolean(it.name, false) }
                 .toList()
 
@@ -90,9 +91,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu,menu)
+        return true
+    }
+
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         menu!!.clear()
-        val wirelessInterfaces = networkManager.getWirelessInterfaces()
+        val wirelessInterfaces = networkManager.getInterfaces(INTERFACE_PREFIXES)
         preferences.edit {
             preferences.all.keys.forEach { key ->
                 if (wirelessInterfaces.none { it.name == key }) {
